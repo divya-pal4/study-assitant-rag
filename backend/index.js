@@ -8,17 +8,12 @@ const cors = require("cors");
 
 const app = express();
 
-// --------------------
-// Middleware
-// --------------------
 app.use(cors());
-app.use(express.json()); // MUST be before routes that use req.body
+app.use(express.json());
 
 const upload = multer({ dest: "uploads/" });
 
-// --------------------
-// Chunking Function
-// --------------------
+
 function chunkText(text, wordsPerChunk = 500) {
   const words = text.split(/\s+/);
   const chunks = [];
@@ -30,16 +25,12 @@ function chunkText(text, wordsPerChunk = 500) {
   return chunks;
 }
 
-// --------------------
-// Routes
-// --------------------
 
-// Health check
 app.get("/", (req, res) => {
   res.send("Study Assistant Backend is running 🚀");
 });
 
-// PDF upload
+
 app.post("/upload", upload.single("pdf"), async (req, res) => {
   try {
     const dataBuffer = fs.readFileSync(req.file.path);
@@ -70,7 +61,7 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
   }
 });
 
-// Question endpoint
+
 app.post("/ask", async (req, res) => {
   try {
     const { question } = req.body;
@@ -79,27 +70,29 @@ app.post("/ask", async (req, res) => {
       return res.status(400).json({ error: "Question is required" });
     }
 
-    // Call FastAPI retrieval service
+    
     const response = await axios.post(
-      "http://localhost:8000/retrieve",
-      {
-        question: question,
-        top_k: 3
-      }
+    "http://localhost:8000/ask_llm",
+    {
+    question: question,
+    top_k: 3
+    }
     );
 
     res.json({
-      question: question,
-      retrieved_chunks: response.data.results
-    });
+    question: question,
+    answer: response.data.answer,
+    sources: response.data.sources
+  });
+
 
   } catch (error) {
     console.error(error.message);
-    res.status(500).json({ error: "Failed to retrieve context" });
+    res.status(500).json({ error: "Failed to get answer from llm" });
   }
 });
 
-// --------------------
+
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");
 });

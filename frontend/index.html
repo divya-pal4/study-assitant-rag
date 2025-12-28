@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Study Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; background:#FAFAFA; margin:40px; }
+    #chatContainer { max-width:700px; margin:auto; }
+    h2 { text-align:center; }
+    #pdf-upload { margin-bottom:20px; }
+    #uploadedList { list-style:none; padding-left:0; }
+    #uploadedList li { margin:5px 0; background:#e0f7fa; padding:5px 10px; border-radius:5px; }
+    #chatWindow { height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fff; display:flex; flex-direction:column; }
+    .message { padding: 10px; margin: 5px 0; border-radius: 10px; max-width:80%; display:inline-block; }
+    .user { background: #D3F4C1; align-self: flex-end; text-align:right; }
+    .bot { background: #F1F0F0; align-self: flex-start; text-align:left; }
+    #inputContainer { margin-top:10px; display:flex; gap:10px; }
+    #question { flex:1; padding:10px; border-radius:5px; border:1px solid #ccc; }
+    #askBtn { padding:10px 20px; border-radius:5px; }
+  </style>
+</head>
+<body>
+<div id="chatContainer">
+  <h2>Study Assistant</h2>
+
+
+  <div id="pdf-upload">
+    <input type="file" id="pdfFile" multiple>
+    <button id="uploadBtn">Upload PDFs</button>
+    <ul id="uploadedList"></ul>
+  </div>
+
+  <div id="chatWindow"></div>
+
+
+  <div id="inputContainer">
+    <input type="text" id="question" placeholder="Ask a question...">
+    <button id="askBtn">Ask</button>
+  </div>
+</div>
+
+<script>
+const chatWindow = document.getElementById('chatWindow');
+const uploadedList = document.getElementById('uploadedList');
+
+function addMessage(text, type, pdfName = null) {
+  const div = document.createElement('div');
+  div.className = 'message ' + type;
+  if(pdfName) text = `[${pdfName}] ${text}`;
+  div.innerText = text;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// PDF Upload
+document.getElementById('uploadBtn').onclick = async () => {
+  const files = document.getElementById('pdfFile').files;
+  if(!files.length) return alert("Select at least one PDF!");
+
+  for(const file of files){
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    const res = await fetch('http://localhost:3000/upload', { method:'POST', body: formData });
+    const data = await res.json();
+
+    addMessage(`Uploaded: ${file.name} | Chunks: ${data.totalChunks}`, 'bot', file.name);
+    const li = document.createElement('li');
+    li.innerText = `${file.name} ✅`;
+    uploadedList.appendChild(li);
+  }
+};
+
+// Ask question
+document.getElementById('askBtn').onclick = async () => {
+  const question = document.getElementById('question').value;
+  if(!question) return;
+
+  addMessage(question, 'user');
+  document.getElementById('question').value = '';
+
+  const res = await fetch('http://localhost:3000/ask', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ question })
+  });
+
+  const data = await res.json();
+
+
+addMessage(data.answer, 'bot');
+
+
+if (data.sources) {
+  data.sources.forEach((src, i) => {
+    addMessage(`Source ${i+1}: ${src.substring(0, 200)}...`, 'bot');
+  });
+}
+
+
+};
+</script>
+</body>
+</html>
