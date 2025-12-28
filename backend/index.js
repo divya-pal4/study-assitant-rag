@@ -27,7 +27,7 @@ function chunkText(text, wordsPerChunk = 500) {
 
 
 app.get("/", (req, res) => {
-  res.send("Study Assistant Backend is running 🚀");
+  res.send("Study Assistant Backend is running");
 });
 
 
@@ -50,7 +50,7 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
     });
 
     res.json({
-      message: "PDF uploaded, chunked & saved successfully ✅",
+      message: "PDF uploaded, chunked & saved successfully",
       totalChunks: chunks.length,
       preview: chunks[0].substring(0, 300)
     });

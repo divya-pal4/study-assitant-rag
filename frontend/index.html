@@ -67,7 +67,7 @@ document.getElementById('uploadBtn').onclick = async () => {
 
     addMessage(`Uploaded: ${file.name} | Chunks: ${data.totalChunks}`, 'bot', file.name);
     const li = document.createElement('li');
-    li.innerText = `${file.name} ✅`;
+    li.innerText = `${file.name}`;
     uploadedList.appendChild(li);
   }
 };

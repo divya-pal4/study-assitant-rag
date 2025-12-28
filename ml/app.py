@@ -19,7 +19,7 @@ index = faiss.read_index(INDEX_PATH)
 with open(CHUNKS_PATH, "rb") as f:
     chunks = pickle.load(f)
 
-print(f"✅ Loaded FAISS with {index.ntotal} chunks")
+print(f" Loaded FAISS with {index.ntotal} chunks")
 
 
 class QueryRequest(BaseModel):
@@ -68,4 +68,4 @@ Answer:
 
 @app.get("/")
 def health():
-    return {"status": "RAG API running 🚀"}
+    return {"status": "RAG API running"}
