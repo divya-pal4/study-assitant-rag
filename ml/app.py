@@ -35,7 +35,9 @@ def ask_llm(request: QueryRequest):
     ).astype("float32")
 
     distances, indices = index.search(query_embedding, request.top_k)
-    context = "\n\n".join([chunks[i] for i in indices[0]])
+    context = "\n\n".join(
+        [chunks[i][:800] for i in indices[0]]
+    )
 
     
     prompt = f"""
@@ -53,7 +55,7 @@ Answer:
 
     
     result = subprocess.run(
-        ["ollama", "run", "mistral"],
+        ["ollama", "run", "llama3.2:3b"],
         input=prompt,
         text=True,
         capture_output=True
