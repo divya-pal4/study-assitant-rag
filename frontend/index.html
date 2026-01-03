@@ -12,7 +12,18 @@
     #uploadedList { list-style:none; padding-left:0; }
     #uploadedList li { margin:5px 0; background:#e0f7fa; padding:5px 10px; border-radius:5px; }
     #chatWindow { height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fff; display:flex; flex-direction:column; }
-    .message { padding: 10px; margin: 5px 0; border-radius: 10px; max-width:80%; display:inline-block; }
+    .message {
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 10px;
+  max-width: 80%;
+  display: inline-block;
+
+  white-space: pre-wrap;
+  word-break: break-word;   /* 🔥 THIS is the missing piece */
+  overflow-wrap: anywhere;  /* 🔥 force break anywhere */
+}
+
     .user { background: #D3F4C1; align-self: flex-end; text-align:right; }
     .bot { background: #F1F0F0; align-self: flex-start; text-align:left; }
     #inputContainer { margin-top:10px; display:flex; gap:10px; }
@@ -44,6 +55,12 @@
 const chatWindow = document.getElementById('chatWindow');
 const uploadedList = document.getElementById('uploadedList');
 
+function cleanText(text) {
+  return text
+    .replace(/\s+/g, " ")                     // normalize spaces
+    .replace(/([a-z])([A-Z])/g, "$1 $2");     // split joined words
+}
+
 function addMessage(text, type, pdfName = null) {
   const div = document.createElement('div');
   div.className = 'message ' + type;
@@ -51,6 +68,25 @@ function addMessage(text, type, pdfName = null) {
   div.innerText = text;
   chatWindow.appendChild(div);
   chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function typeMessage(text) {
+  const div = document.createElement('div');
+  div.className = 'message bot';
+  chatWindow.appendChild(div);
+
+  let words = text.split(" ");
+  let index = 0;
+
+  const interval = setInterval(() => {
+    if (index < words.length) {
+      div.innerText += words[index] + " ";
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+      index++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 40); // speed (lower = faster)
 }
 
 // PDF Upload
@@ -86,10 +122,10 @@ document.getElementById('askBtn').onclick = async () => {
     body: JSON.stringify({ question })
   });
 
-  const data = await res.json();
+const data = await res.json();
 
-
-addMessage(data.answer, 'bot');
+// bot typing effect
+typeMessage(cleanText(data.answer));
 
 
 if (data.sources) {
@@ -97,6 +133,7 @@ if (data.sources) {
     addMessage(`Source ${i+1}: ${src.substring(0, 200)}...`, 'bot');
   });
 }
+
 
 
 };

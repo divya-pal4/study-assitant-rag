@@ -1,8 +1,12 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import subprocess
+import ollama
+import time
 import faiss
 import pickle
+import json
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
@@ -26,45 +30,46 @@ class QueryRequest(BaseModel):
     question: str
     top_k: int = 3
 
+def build_prompt(question: str, top_k: int, retrieved_chunks: list[str] = None):
+    context = ""
 
-@app.post("/ask_llm")
-def ask_llm(request: QueryRequest):
-    query_embedding = model.encode(
-        [request.question],
-        convert_to_numpy=True
-    ).astype("float32")
+    if retrieved_chunks:
+        context = "\n\n".join(retrieved_chunks)
+        context = context[:800]   # keep context small for speed
 
-    distances, indices = index.search(query_embedding, request.top_k)
-    context = "\n\n".join(
-        [chunks[i][:800] for i in indices[0]]
-    )
-
-    
     prompt = f"""
 You are a helpful study assistant.
-Answer the question using ONLY the context below.
+Answer the question using the context below.
+If the answer is not in the context, say you don't know.
 
 Context:
 {context}
 
 Question:
-{request.question}
+{question}
 
 Answer:
 """
+    return prompt.strip()
 
-    
-    result = subprocess.run(
-        ["ollama", "run", "llama3.2:3b"],
-        input=prompt,
-        text=True,
-        capture_output=True
+
+@app.post("/ask_llm")
+def ask_llm(req: QueryRequest):
+
+    prompt = build_prompt(req.question, req.top_k)
+
+    response = ollama.generate(
+        model="llama3.2:3b",
+        prompt=prompt,
+        stream=False
     )
 
+    answer = response["response"]
+    answer = " ".join(answer.split())
+    
     return {
-        "question": request.question,
-        "answer": result.stdout.strip(),
-        "sources": [chunks[i] for i in indices[0]]
+        "answer": answer,
+        "sources": []
     }
 
 

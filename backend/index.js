@@ -61,7 +61,6 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
   }
 });
 
-
 app.post("/ask", async (req, res) => {
   try {
     const { question } = req.body;
@@ -70,27 +69,27 @@ app.post("/ask", async (req, res) => {
       return res.status(400).json({ error: "Question is required" });
     }
 
-    
     const response = await axios.post(
-    "http://localhost:8000/ask_llm",
-    {
-    question: question,
-    top_k: 3
-    }
+      "http://localhost:8000/ask_llm",
+      {
+        question: question,
+        top_k: 3
+      },
+      { timeout: 0 } // IMPORTANT for long LLM calls
     );
 
     res.json({
-    question: question,
-    answer: response.data.answer,
-    sources: response.data.sources
-  });
-
+      question: question,
+      answer: response.data.answer,
+      sources: response.data.sources
+    });
 
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ error: "Failed to get answer from llm" });
+    console.error("ASK ERROR:", error.message);
+    res.status(500).json({ error: "Failed to get answer" });
   }
 });
+
 
 
 app.listen(3000, () => {
