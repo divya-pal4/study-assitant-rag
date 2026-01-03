@@ -20,8 +20,8 @@
   display: inline-block;
 
   white-space: pre-wrap;
-  word-break: break-word;   /* 🔥 THIS is the missing piece */
-  overflow-wrap: anywhere;  /* 🔥 force break anywhere */
+  word-break: break-word;  
+  overflow-wrap: anywhere;  /* force break anywhere */
 }
 
     .user { background: #D3F4C1; align-self: flex-end; text-align:right; }
@@ -86,7 +86,7 @@ function typeMessage(text) {
     } else {
       clearInterval(interval);
     }
-  }, 40); // speed (lower = faster)
+  }, 80); // speed 
 }
 
 // PDF Upload
