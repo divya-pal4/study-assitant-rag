@@ -100,10 +100,18 @@ document.getElementById('uploadBtn').onclick = async () => {
 
     const res = await fetch('http://localhost:3000/upload', { method:'POST', body: formData });
     const data = await res.json();
-
     addMessage(`Uploaded: ${file.name} | Chunks: ${data.totalChunks}`, 'bot', file.name);
     const li = document.createElement('li');
     li.innerText = `${file.name}`;
+    li.dataset.pdfId = data.pdf_id || '';
+    li.onclick = () => {
+      // mark selected
+      document.querySelectorAll('#uploadedList li').forEach(n => n.classList.remove('selected'));
+      li.classList.add('selected');
+      // store selectedPdfId globally
+      window.selectedPdfId = li.dataset.pdfId;
+      addMessage(`Selected PDF: ${file.name}`, 'bot', file.name);
+    };
     uploadedList.appendChild(li);
   }
 };
@@ -119,7 +127,7 @@ document.getElementById('askBtn').onclick = async () => {
   const res = await fetch('http://localhost:3000/ask', {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ question })
+    body: JSON.stringify({ question, pdf_id: window.selectedPdfId || null })
   });
 
 const data = await res.json();

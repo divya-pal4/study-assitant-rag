@@ -39,18 +39,46 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
     const text = pdfData.text;
     const chunks = chunkText(text, 500);
 
-    const chunksFilePath = path.join(__dirname, "ml", "chunks.txt");
+    // ensure we write to the project's top-level `ml/` folder (not backend/ml)
+    const { v4: uuidv4 } = require('uuid');
+    const pdfId = uuidv4();
+
+    const chunksDir = path.join(__dirname, "..", "ml");
+    fs.mkdirSync(chunksDir, { recursive: true });
+    // write per-pdf chunks file (JSON-lines)
+    const chunksFilePath = path.join(chunksDir, `chunks_${pdfId}.txt`);
     fs.writeFileSync(chunksFilePath, "");
 
+    // create a per-pdf faiss output dir
+    const faissOutDir = path.join(chunksDir, "faiss_index", pdfId);
+    fs.mkdirSync(faissOutDir, { recursive: true });
+
     chunks.forEach((chunk, index) => {
+      const chunkObj = {
+        pdf: req.file.originalname,
+        chunk_id: index + 1,
+        text: chunk
+      };
+
       fs.appendFileSync(
         chunksFilePath,
-        `--- CHUNK ${index + 1} ---\n${chunk}\n\n`
+        JSON.stringify(chunkObj) + "\n"
       );
     });
 
+
+    // spawn embeddings generation in background
+    const { spawn } = require('child_process');
+    const py = spawn('python3', [
+      path.join(__dirname, '..', 'ml', 'generate_embeddings.py'),
+      '--chunks-file', chunksFilePath,
+      '--faiss-dir', faissOutDir
+    ], { stdio: 'ignore', detached: true });
+    py.unref();
+
     res.json({
       message: "PDF uploaded, chunked & saved successfully",
+      pdf_id: pdfId,
       totalChunks: chunks.length,
       preview: chunks[0].substring(0, 300)
     });
@@ -63,18 +91,18 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
 
 app.post("/ask", async (req, res) => {
   try {
-    const { question } = req.body;
+    const { question, pdf_id, top_k } = req.body;
 
     if (!question) {
       return res.status(400).json({ error: "Question is required" });
     }
 
+    const payload = { question: question, top_k: top_k || 3 };
+    if (pdf_id) payload.pdf_id = pdf_id;
+
     const response = await axios.post(
       "http://localhost:8000/ask_llm",
-      {
-        question: question,
-        top_k: 3
-      },
+      payload,
       { timeout: 0 } // IMPORTANT for long LLM calls
     );
 
