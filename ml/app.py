@@ -54,7 +54,7 @@ def build_prompt(question: str, top_k: int, retrieved_chunks: list[str] = None):
     prompt = f"""
 You are a helpful study assistant.
 Answer the question using the context below.
-If the answer is not in the context, say you don't know.
+If the answer is not in the context, then answer accordingly to you knowledge.
 
 Context:
 {context}

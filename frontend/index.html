@@ -1,150 +1,664 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Study Assistant</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Poppins', sans-serif; background:#FAFAFA; margin:40px; }
-    #chatContainer { max-width:700px; margin:auto; }
-    h2 { text-align:center; }
-    #pdf-upload { margin-bottom:20px; }
-    #uploadedList { list-style:none; padding-left:0; }
-    #uploadedList li { margin:5px 0; background:#e0f7fa; padding:5px 10px; border-radius:5px; }
-    #chatWindow { height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fff; display:flex; flex-direction:column; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    #chatContainer {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+      text-align: center;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    #pdf-upload {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 2px dashed #667eea;
+    }
+
+    .upload-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    #pdfFile {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: white;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #uploadedList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #uploadedList li {
+      margin: 8px 0;
+      padding: 12px 15px;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 2px solid transparent;
+    }
+
+    #uploadedList li:hover {
+      background: #f0f4ff;
+      border-color: #667eea;
+    }
+
+    #uploadedList li.selected {
+      background: #e3f2fd;
+      border-color: #667eea;
+      box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+    }
+
+    .pdf-name {
+      font-weight: 500;
+      color: #333;
+      flex: 1;
+    }
+
+    .status {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .status.processing {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status.ready {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    #chatWindow {
+      height: 450px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #chatWindow::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chatWindow::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    #chatWindow::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+
+    #chatWindow::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
     .message {
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 10px;
-  max-width: 80%;
-  display: inline-block;
+      padding: 12px 16px;
+      border-radius: 15px;
+      max-width: 75%;
+      display: inline-block;
+      white-space: pre-wrap;
+      word-break: break-word;
+      animation: fadeIn 0.3s;
+    }
 
-  white-space: pre-wrap;
-  word-break: break-word;  
-  overflow-wrap: anywhere;  /* force break anywhere */
-}
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-    .user { background: #D3F4C1; align-self: flex-end; text-align:right; }
-    .bot { background: #F1F0F0; align-self: flex-start; text-align:left; }
-    #inputContainer { margin-top:10px; display:flex; gap:10px; }
-    #question { flex:1; padding:10px; border-radius:5px; border:1px solid #ccc; }
-    #askBtn { padding:10px 20px; border-radius:5px; }
+    .user {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 5px;
+    }
+
+    .bot {
+      background: white;
+      color: #333;
+      align-self: flex-start;
+      border: 1px solid #e0e0e0;
+      border-bottom-left-radius: 5px;
+    }
+
+    .source {
+      background: #fff9e6;
+      border-left: 3px solid #ffc107;
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 13px;
+      color: #666;
+      border-radius: 5px;
+      max-width: 75%;
+      align-self: flex-start;
+    }
+
+    #inputContainer {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #selectedPdfInfo {
+      padding: 8px 15px;
+      background: #e3f2fd;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #1976d2;
+      font-weight: 500;
+      white-space: nowrap;
+      display: none;
+    }
+
+    #selectedPdfInfo.show {
+      display: block;
+    }
+
+    #question {
+      flex: 1;
+      padding: 12px 15px;
+      border-radius: 25px;
+      border: 2px solid #e0e0e0;
+      font-size: 14px;
+      transition: border 0.3s;
+    }
+
+    #question:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    #askBtn {
+      padding: 12px 30px;
+      border-radius: 25px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 50px 20px;
+      font-size: 14px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(102, 126, 234, 0.3);
+      border-radius: 50%;
+      border-top-color: #667eea;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      padding: 5px 10px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+
+    .delete-btn:hover {
+      background: #c82333;
+    }
   </style>
 </head>
+
 <body>
-<div id="chatContainer">
-  <h2>Study Assistant</h2>
+  <div id="chatContainer">
+    <h2>🎓 Study Assistant</h2>
+    <p class="subtitle">Upload PDFs and ask questions about their content</p>
 
+    <div id="pdf-upload">
+      <div class="upload-controls">
+        <input type="file" id="pdfFile" multiple accept=".pdf">
+        <button id="uploadBtn">📤 Upload PDFs</button>
+      </div>
+      <ul id="uploadedList"></ul>
+    </div>
 
-  <div id="pdf-upload">
-    <input type="file" id="pdfFile" multiple>
-    <button id="uploadBtn">Upload PDFs</button>
-    <ul id="uploadedList"></ul>
+    <div id="chatWindow">
+      <div class="empty-state">
+        👋 Welcome! Upload a PDF and start asking questions.
+      </div>
+    </div>
+
+    <div id="inputContainer">
+      <div id="selectedPdfInfo">📄 No PDF selected</div>
+      <input type="text" id="question" placeholder="First select a PDF, then ask questions..." disabled>
+      <button id="askBtn" disabled>Ask</button>
+    </div>
   </div>
 
-  <div id="chatWindow"></div>
+  <script>
+    const chatWindow = document.getElementById('chatWindow');
+    const uploadedList = document.getElementById('uploadedList');
+    const questionInput = document.getElementById('question');
+    const askBtn = document.getElementById('askBtn');
+    const selectedPdfInfo = document.getElementById('selectedPdfInfo');
 
+    let selectedPdfId = null;
+    let selectedPdfName = null;
 
-  <div id="inputContainer">
-    <input type="text" id="question" placeholder="Ask a question...">
-    <button id="askBtn">Ask</button>
-  </div>
-</div>
-
-<script>
-const chatWindow = document.getElementById('chatWindow');
-const uploadedList = document.getElementById('uploadedList');
-
-function cleanText(text) {
-  return text
-    .replace(/\s+/g, " ")                     // normalize spaces
-    .replace(/([a-z])([A-Z])/g, "$1 $2");     // split joined words
-}
-
-function addMessage(text, type, pdfName = null) {
-  const div = document.createElement('div');
-  div.className = 'message ' + type;
-  if(pdfName) text = `[${pdfName}] ${text}`;
-  div.innerText = text;
-  chatWindow.appendChild(div);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-}
-
-function typeMessage(text) {
-  const div = document.createElement('div');
-  div.className = 'message bot';
-  chatWindow.appendChild(div);
-
-  let words = text.split(" ");
-  let index = 0;
-
-  const interval = setInterval(() => {
-    if (index < words.length) {
-      div.innerText += words[index] + " ";
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-      index++;
-    } else {
-      clearInterval(interval);
+    function cleanText(text) {
+      return text
+        .replace(/\s+/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .trim();
     }
-  }, 80); // speed 
-}
 
-// PDF Upload
-document.getElementById('uploadBtn').onclick = async () => {
-  const files = document.getElementById('pdfFile').files;
-  if(!files.length) return alert("Select at least one PDF!");
+    function addMessage(text, type, isSource = false) {
+      // Remove empty state
+      const emptyState = chatWindow.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
 
-  for(const file of files){
-    const formData = new FormData();
-    formData.append('pdf', file);
+      const div = document.createElement('div');
+      div.className = isSource ? 'source' : `message ${type}`;
+      div.innerText = cleanText(text);
+      chatWindow.appendChild(div);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
 
-    const res = await fetch('http://localhost:3000/upload', { method:'POST', body: formData });
-    const data = await res.json();
-    addMessage(`Uploaded: ${file.name} | Chunks: ${data.totalChunks}`, 'bot', file.name);
-    const li = document.createElement('li');
-    li.innerText = `${file.name}`;
-    li.dataset.pdfId = data.pdf_id || '';
-    li.onclick = () => {
-      // mark selected
-      document.querySelectorAll('#uploadedList li').forEach(n => n.classList.remove('selected'));
-      li.classList.add('selected');
-      // store selectedPdfId globally
-      window.selectedPdfId = li.dataset.pdfId;
-      addMessage(`Selected PDF: ${file.name}`, 'bot', file.name);
+    function typeMessage(text) {
+      const emptyState = chatWindow.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+
+      const div = document.createElement('div');
+      div.className = 'message bot';
+      chatWindow.appendChild(div);
+
+      let words = text.split(" ");
+      let index = 0;
+
+      const interval = setInterval(() => {
+        if (index < words.length) {
+          div.innerText += words[index] + " ";
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+          index++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 60);
+    }
+
+    function updateInputState() {
+      const hasReadyPdf = Array.from(uploadedList.children).some(li => 
+        li.dataset.ready === 'true'
+      );
+      
+      if (!selectedPdfId) {
+        questionInput.disabled = true;
+        askBtn.disabled = true;
+        questionInput.placeholder = "First select a PDF from the list above...";
+        selectedPdfInfo.textContent = "⚠️ No PDF selected - Click a PDF above to select it";
+        selectedPdfInfo.className = 'show';
+        selectedPdfInfo.style.background = '#fff3cd';
+        selectedPdfInfo.style.color = '#856404';
+      } else {
+        questionInput.disabled = false;
+        askBtn.disabled = false;
+        questionInput.placeholder = `Ask questions about "${selectedPdfName}"...`;
+        selectedPdfInfo.textContent = `📄 Selected: ${selectedPdfName}`;
+        selectedPdfInfo.className = 'show';
+        selectedPdfInfo.style.background = '#e3f2fd';
+        selectedPdfInfo.style.color = '#1976d2';
+      }
+    }
+
+    // PDF Upload with improved error handling
+    document.getElementById('uploadBtn').onclick = async () => {
+      const files = document.getElementById('pdfFile').files;
+      if (!files.length) {
+        alert("Please select at least one PDF file!");
+        return;
+      }
+
+      for (const file of files) {
+        if (!file.type.includes('pdf')) {
+          alert(`${file.name} is not a PDF file. Skipping.`);
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('pdf', file);
+
+        try {
+          addMessage(`Uploading ${file.name}...`, 'bot');
+          
+          const res = await fetch('http://localhost:3000/upload', { 
+            method: 'POST', 
+            body: formData 
+          });
+          
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || 'Upload failed');
+          }
+
+          const data = await res.json();
+          
+          addMessage(`✅ Uploaded: ${file.name} (${data.totalChunks} chunks)`, 'bot');
+
+          // Create list item
+          const li = document.createElement('li');
+          li.dataset.pdfId = data.pdf_id;
+          li.dataset.ready = 'false';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'pdf-name';
+          nameSpan.innerText = file.name;
+
+          const statusSpan = document.createElement('span');
+          statusSpan.className = 'status processing';
+          statusSpan.innerHTML = '<span class="loading"></span> Indexing...';
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.innerText = '🗑️';
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deletePdf(data.pdf_id, li);
+          };
+
+          li.appendChild(nameSpan);
+          li.appendChild(statusSpan);
+          li.appendChild(deleteBtn);
+
+          li.onclick = () => {
+            if (li.dataset.ready !== 'true') {
+              addMessage('⏳ This PDF is still being indexed. Please wait.', 'bot');
+              return;
+            }
+            document.querySelectorAll('#uploadedList li').forEach(n => n.classList.remove('selected'));
+            li.classList.add('selected');
+            selectedPdfId = li.dataset.pdfId;
+            selectedPdfName = file.name;
+            updateInputState();
+            addMessage(`✅ Selected PDF: "${file.name}" - You can now ask questions about this document.`, 'bot');
+          };
+
+          uploadedList.appendChild(li);
+
+          // Poll for index readiness
+          pollIndexStatus(data.pdf_id, li, statusSpan);
+
+        } catch (error) {
+          console.error('Upload error:', error);
+          addMessage(`❌ Failed to upload ${file.name}: ${error.message}`, 'bot');
+        }
+      }
+
+      // Clear file input
+      document.getElementById('pdfFile').value = '';
     };
-    uploadedList.appendChild(li);
-  }
-};
 
-// Ask question
-document.getElementById('askBtn').onclick = async () => {
-  const question = document.getElementById('question').value;
-  if(!question) return;
+    // Poll index status
+    function pollIndexStatus(pdfId, li, statusSpan) {
+      const check = async () => {
+        try {
+          const res = await fetch(`http://localhost:3000/index_status/${pdfId}`);
+          const data = await res.json();
 
-  addMessage(question, 'user');
-  document.getElementById('question').value = '';
+          if (data.ready) {
+            statusSpan.className = 'status ready';
+            statusSpan.innerText = '✓ Ready';
+            li.dataset.ready = 'true';
+            updateInputState();
+            return;
+          }
+        } catch (error) {
+          console.error('Status check failed:', error);
+        }
+        setTimeout(check, 2000);
+      };
+      check();
+    }
 
-  const res = await fetch('http://localhost:3000/ask', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ question, pdf_id: window.selectedPdfId || null })
-  });
+    // Delete PDF
+    async function deletePdf(pdfId, li) {
+      if (!confirm('Delete this PDF and its index?')) return;
 
-const data = await res.json();
+      try {
+        const res = await fetch(`http://localhost:3000/pdf/${pdfId}`, { method: 'DELETE' });
+        if (res.ok) {
+          li.remove();
+          if (selectedPdfId === pdfId) {
+            selectedPdfId = null;
+            selectedPdfName = null;
+          }
+          updateInputState();
+          addMessage('🗑️ PDF deleted', 'bot');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        alert('Failed to delete PDF');
+      }
+    }
 
-// bot typing effect
-typeMessage(cleanText(data.answer));
+    // Ask question with improved UX
+    async function askQuestion() {
+      const question = questionInput.value.trim();
+      if (!question) return;
 
+      if (!selectedPdfId) {
+        addMessage('⚠️ Please select a PDF first by clicking on it in the list above!', 'bot');
+        return;
+      }
 
-if (data.sources) {
-  data.sources.forEach((src, i) => {
-    addMessage(`Source ${i+1}: ${src.substring(0, 200)}...`, 'bot');
-  });
-}
+      addMessage(question, 'user');
+      questionInput.value = '';
+      askBtn.disabled = true;
 
+      try {
+        const res = await fetch('http://localhost:3000/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            question, 
+            pdf_id: selectedPdfId,
+            top_k: 3
+          })
+        });
 
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to get answer');
+        }
 
-};
-</script>
+        const data = await res.json();
+
+        // Type bot response
+        typeMessage(data.answer);
+
+        // Show sources
+        if (data.sources && data.sources.length > 0) {
+          setTimeout(() => {
+            data.sources.forEach((src, i) => {
+              addMessage(`📌 Source ${i + 1}: ${src.substring(0, 150)}...`, 'bot', true);
+            });
+          }, data.answer.split(' ').length * 60 + 500);
+        }
+
+      } catch (error) {
+        console.error('Ask error:', error);
+        addMessage(`❌ Error: ${error.message}`, 'bot');
+      } finally {
+        askBtn.disabled = false;
+      }
+    }
+
+    askBtn.onclick = askQuestion;
+    questionInput.onkeypress = (e) => {
+      if (e.key === 'Enter' && !askBtn.disabled) {
+        askQuestion();
+      }
+    };
+
+    // Load existing PDFs on page load
+    async function loadExistingPdfs() {
+      try {
+        const res = await fetch('http://localhost:3000/pdfs');
+        const data = await res.json();
+        
+        if (data.pdfs && data.pdfs.length > 0) {
+          addMessage(`📚 Found ${data.pdfs.length} previously uploaded PDF(s). Loading...`, 'bot');
+          
+          data.pdfs.forEach(pdf => {
+            const li = document.createElement('li');
+            li.dataset.pdfId = pdf.pdf_id;
+            li.dataset.ready = pdf.indexStatus === 'ready' ? 'true' : 'false';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'pdf-name';
+            nameSpan.innerText = pdf.filename;
+
+            const statusSpan = document.createElement('span');
+            if (pdf.indexStatus === 'ready') {
+              statusSpan.className = 'status ready';
+              statusSpan.innerText = '✓ Ready';
+            } else if (pdf.indexStatus === 'failed') {
+              statusSpan.className = 'status failed';
+              statusSpan.innerText = '✗ Failed';
+            } else {
+              statusSpan.className = 'status processing';
+              statusSpan.innerHTML = '<span class="loading"></span> Indexing...';
+              // Poll for completion if still processing
+              pollIndexStatus(pdf.pdf_id, li, statusSpan);
+            }
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerText = '🗑️';
+            deleteBtn.onclick = (e) => {
+              e.stopPropagation();
+              deletePdf(pdf.pdf_id, li);
+            };
+
+            li.appendChild(nameSpan);
+            li.appendChild(statusSpan);
+            li.appendChild(deleteBtn);
+
+            li.onclick = () => {
+              if (li.dataset.ready !== 'true') {
+                addMessage('⏳ This PDF is still being indexed. Please wait.', 'bot');
+                return;
+              }
+              document.querySelectorAll('#uploadedList li').forEach(n => n.classList.remove('selected'));
+              li.classList.add('selected');
+              selectedPdfId = li.dataset.pdfId;
+              selectedPdfName = pdf.filename;
+              updateInputState();
+              addMessage(`✅ Selected PDF: "${pdf.filename}" - You can now ask questions about this document.`, 'bot');
+            };
+
+            uploadedList.appendChild(li);
+          });
+          
+          updateInputState();
+        }
+      } catch (error) {
+        console.error('Error loading PDFs:', error);
+      }
+    }
+
+    // Initialize UI state and load existing PDFs
+    updateInputState();
+    loadExistingPdfs();
+  </script>
 </body>
+
 </html>
